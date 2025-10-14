@@ -14,6 +14,11 @@ class ViewModelFactory(private val dao: ServiceOrderDao) : ViewModelProvider.Fac
             @Suppress("UNCHECKED_CAST")
             return AddOrderViewModel(dao) as T
         }
+        // --- AÑADE ESTE NUEVO BLOQUE ---
+        if (modelClass.isAssignableFrom(OrderDetailViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return OrderDetailViewModel(dao) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

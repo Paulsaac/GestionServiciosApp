@@ -6,40 +6,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-
 import com.tuequipo.gestionserviciosapp.model.OrderStatus
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
-import com.tuequipo.gestionserviciosapp.ui.theme.GestionServiciosAppTheme
 import com.tuequipo.gestionserviciosapp.viewmodel.HomeViewModel
 import com.tuequipo.gestionserviciosapp.viewmodel.ViewModelFactory
-
-import java.util.Date
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,14 +32,36 @@ fun HomeScreen(navController: NavController, factory: ViewModelFactory) {
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val orders by viewModel.serviceOrders.collectAsState()
 
+    // --- CÓDIGO NUEVO PARA SNACKBAR ---
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val newOrderAdded = navController.currentBackStackEntry
+        ?.savedStateHandle?.get<Boolean>("new_order_added") ?: false
+    val orderDeleted = navController.currentBackStackEntry
+        ?.savedStateHandle?.get<Boolean>("order_deleted") ?: false
+
+    // Muestra el Snackbar si se añadió o eliminó una orden
+    LaunchedEffect(newOrderAdded, orderDeleted) {
+        if (newOrderAdded) {
+            scope.launch {
+                snackbarHostState.showSnackbar("Orden guardada con éxito")
+            }
+            navController.currentBackStackEntry?.savedStateHandle?.set("new_order_added", false)
+        }
+        if (orderDeleted) {
+            scope.launch {
+                snackbarHostState.showSnackbar("Orden eliminada correctamente")
+            }
+            navController.currentBackStackEntry?.savedStateHandle?.set("order_deleted", false)
+        }
+    }
+    // --- FIN CÓDIGO NUEVO PARA SNACKBAR ---
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }, // Añadimos el host del Snackbar
         topBar = {
             TopAppBar(
                 title = { Text("Órdenes de Servicio") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                )
             )
         },
         floatingActionButton = {
@@ -73,6 +80,13 @@ fun HomeScreen(navController: NavController, factory: ViewModelFactory) {
 
 @Composable
 fun ServiceOrderItem(order: ServiceOrder, navController: NavController) {
+    // ... (El código de ServiceOrderItem se mantiene como lo definimos en el paso anterior)
+    val cardColor = when (order.status) {
+        OrderStatus.PENDIENTE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        OrderStatus.EN_PROCESO -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        OrderStatus.FINALIZADO -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -80,7 +94,8 @@ fun ServiceOrderItem(order: ServiceOrder, navController: NavController) {
             .clickable {
                 navController.navigate("order_detail/${order.id}")
             },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -97,14 +112,3 @@ fun ServiceOrderItem(order: ServiceOrder, navController: NavController) {
         }
     }
 }
-
-/*@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    val navController = rememberNavController()
-    ServiceOrderItem(
-        order = ServiceOrder(1, "Cliente de Prueba", "Laptop", "No enciende", OrderStatus.PENDIENTE, Date()),
-        navController = navController
-    )
-}
-*/

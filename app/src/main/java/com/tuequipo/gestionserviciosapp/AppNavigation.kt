@@ -39,7 +39,8 @@ fun AppNavigation() {
             arguments = listOf(navArgument("orderId") { type = NavType.IntType })
         ) { backStackEntry ->
             val orderId = backStackEntry.arguments?.getInt("orderId")
-            OrderDetailScreen(navController = navController, orderId = orderId)
+            // Pasa la factory a la pantalla de detalles
+            OrderDetailScreen(navController = navController, orderId = orderId, factory = viewModelFactory)
         }
     }
 }

@@ -15,8 +15,6 @@ enum class OrderStatus {
 // @Entity le dice a Room que cree una tabla para esta clase.
 @Entity
 data class ServiceOrder(
-    // @PrimaryKey indica que 'id' es la clave primaria.
-    // autoGenerate = true hace que Room genere el ID automáticamente.
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val clientName: String,
@@ -24,5 +22,8 @@ data class ServiceOrder(
     val issueDescription: String,
     val status: OrderStatus,
     val creationDate: Date,
-    val technicianName: String? = null
+    val technicianName: String? = null,
+    // --- NUEVOS CAMPOS AÑADIDOS ---
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
