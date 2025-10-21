@@ -13,13 +13,19 @@ import com.tuequipo.gestionserviciosapp.screens.HomeScreen
 import com.tuequipo.gestionserviciosapp.screens.LoginScreen
 import com.tuequipo.gestionserviciosapp.screens.OrderDetailScreen
 import com.tuequipo.gestionserviciosapp.viewmodel.ViewModelFactory
+import com.tuequipo.gestionserviciosapp.repository.ServiceRepository // <-- Importa el Repositorio
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
+
+    // 1. Obtenemos el DAO
     val dao = AppDatabase.getDatabase(context).serviceOrderDao()
-    val viewModelFactory = ViewModelFactory(dao)
+    // 2. CREAMOS EL REPOSITORIO y le pasamos el DAO
+    val repository = ServiceRepository(dao)
+    // 3. Creamos la fábrica y le pasamos el REPOSITORIO
+    val viewModelFactory = ViewModelFactory(repository)
 
     NavHost(
         navController = navController,

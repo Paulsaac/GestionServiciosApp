@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.* // Importaciones de animación
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -92,7 +94,6 @@ fun OrderDetailScreen(
                 CircularProgressIndicator()
             }
         } else {
-            // Se añade verticalScroll para evitar que el contenido se desborde en pantallas pequeñas
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -102,7 +103,15 @@ fun OrderDetailScreen(
             ) {
                 Text("Cliente: ${order!!.clientName}", style = MaterialTheme.typography.titleLarge)
                 Text("Equipo: ${order!!.deviceType}", style = MaterialTheme.typography.titleMedium)
-                Text("Estado: ${order!!.status}", style = MaterialTheme.typography.titleMedium)
+
+                Text(
+                    text = "Estado: ${order!!.status}",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.animateContentSize(
+                        animationSpec = spring(dampingRatio = 0.5f) // 1000ms = 1 segundo
+                    )
+                )
+
                 Text("Descripción: ${order!!.issueDescription}", style = MaterialTheme.typography.bodyLarge)
                 val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order!!.creationDate)
                 Text("Fecha de Creación: $formattedDate", style = MaterialTheme.typography.bodySmall)
@@ -119,14 +128,23 @@ fun OrderDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (hasImage && imageUri != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUri),
-                        contentDescription = "Foto del equipo",
-                        modifier = Modifier.size(150.dp).align(Alignment.CenterHorizontally)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                // --- BLOQUE DE IMAGEN CORREGIDO ---
+                // Reemplazamos el 'if' por 'AnimatedVisibility'
+                AnimatedVisibility(
+                    visible = hasImage && imageUri != null,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut()
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUri),
+                            contentDescription = "Foto del equipo",
+                            modifier = Modifier.size(150.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
+                // --- FIN DEL BLOQUE DE IMAGEN ---
 
                 Button(
                     onClick = {
@@ -159,7 +177,6 @@ fun OrderDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // --- BOTÓN DE ELIMINAR REINCORPORADO ---
                 Button(
                     onClick = {
                         viewModel.deleteOrder()

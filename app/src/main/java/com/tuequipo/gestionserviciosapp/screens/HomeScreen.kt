@@ -83,7 +83,7 @@ fun ServiceOrderItem(order: ServiceOrder, navController: NavController) {
     // ... (El código de ServiceOrderItem se mantiene como lo definimos en el paso anterior)
     val cardColor = when (order.status) {
         OrderStatus.PENDIENTE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        OrderStatus.EN_PROCESO -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        OrderStatus.EN_PROCESO -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
         OrderStatus.FINALIZADO -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
     }
 

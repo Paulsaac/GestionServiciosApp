@@ -2,22 +2,23 @@ package com.tuequipo.gestionserviciosapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.tuequipo.gestionserviciosapp.database.ServiceOrderDao
+import com.tuequipo.gestionserviciosapp.repository.ServiceRepository
 
-class ViewModelFactory(private val dao: ServiceOrderDao) : ViewModelProvider.Factory {
+// 1. Cambia el constructor para que pida un Repositorio
+class ViewModelFactory(private val repository: ServiceRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        // 2. Pasa el repositorio a cada ViewModel
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return HomeViewModel(dao) as T
+            return HomeViewModel(repository) as T
         }
         if (modelClass.isAssignableFrom(AddOrderViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AddOrderViewModel(dao) as T
+            return AddOrderViewModel(repository) as T
         }
-        // --- AÑADE ESTE NUEVO BLOQUE ---
         if (modelClass.isAssignableFrom(OrderDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OrderDetailViewModel(dao) as T
+            return OrderDetailViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
