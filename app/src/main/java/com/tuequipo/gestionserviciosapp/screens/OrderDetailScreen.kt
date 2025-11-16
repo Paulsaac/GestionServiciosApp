@@ -26,7 +26,6 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.tuequipo.gestionserviciosapp.model.OrderStatus
 import com.tuequipo.gestionserviciosapp.viewmodel.OrderDetailViewModel
 import com.tuequipo.gestionserviciosapp.viewmodel.ViewModelFactory
 import java.io.File
@@ -112,9 +111,18 @@ fun OrderDetailScreen(
                     )
                 )
 
-                Text("Descripción: ${order!!.issueDescription}", style = MaterialTheme.typography.bodyLarge)
-                val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order!!.creationDate)
-                Text("Fecha de Creación: $formattedDate", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "Descripción: ${order!!.issueDescription}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                val formattedDate = SimpleDateFormat(
+                    "dd/MM/yyyy HH:mm",
+                    Locale.getDefault()
+                ).format(order!!.creationDate)
+                Text(
+                    "Fecha de Creación: $formattedDate",
+                    style = MaterialTheme.typography.bodySmall
+                )
 
                 order!!.technicianName?.let {
                     Text("Técnico Asignado: $it", style = MaterialTheme.typography.bodyMedium)
@@ -123,7 +131,10 @@ fun OrderDetailScreen(
                 if (order!!.latitude != null && order!!.longitude != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Ubicación Registrada:", style = MaterialTheme.typography.titleSmall)
-                    Text("Lat: ${order!!.latitude}, Lon: ${order!!.longitude}", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Lat: ${order!!.latitude}, Lon: ${order!!.longitude}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -135,7 +146,10 @@ fun OrderDetailScreen(
                     enter = slideInVertically { it } + fadeIn(),
                     exit = slideOutVertically { it } + fadeOut()
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Image(
                             painter = rememberAsyncImagePainter(imageUri),
                             contentDescription = "Foto del equipo",
@@ -149,7 +163,11 @@ fun OrderDetailScreen(
                 Button(
                     onClick = {
                         val permission = Manifest.permission.CAMERA
-                        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                permission
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
                             imageUri = getTmpFileUri()
                             cameraLauncher.launch(imageUri)
                         } else {
@@ -170,25 +188,37 @@ fun OrderDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(onClick = { viewModel.updateOrderStatus(OrderStatus.PENDIENTE) }, enabled = order!!.status != OrderStatus.PENDIENTE) { Text("Pendiente") }
-                    Button(onClick = { viewModel.updateOrderStatus(OrderStatus.EN_PROCESO) }, enabled = order!!.status != OrderStatus.EN_PROCESO) { Text("En Proceso") }
-                    Button(onClick = { viewModel.updateOrderStatus(OrderStatus.FINALIZADO) }, enabled = order!!.status != OrderStatus.FINALIZADO) { Text("Finalizado") }
-                }
+                    Button(
+                        onClick = { viewModel.updateOrderStatus("PENDIENTE") },
+                        enabled = order!!.status != "PENDIENTE"
+                    ) { Text("Pendiente") }
+                    Button(
+                        onClick = { viewModel.updateOrderStatus("EN_PROCESO") },
+                        enabled = order!!.status != "EN_PROCESO"
+                    ) { Text("En Proceso") }
+                    Button(
+                        onClick = { viewModel.updateOrderStatus("FINALIZADO") },
+                        enabled = order!!.status != "FINALIZADO"
+                    ) { Text("Finalizado") }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                Button(
-                    onClick = {
-                        viewModel.deleteOrder()
-                        navController.previousBackStackEntry?.savedStateHandle?.set("order_deleted", true)
-                        navController.popBackStack()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Eliminar Orden")
+                    Button(
+                        onClick = {
+                            viewModel.deleteOrder()
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "order_deleted",
+                                true
+                            )
+                            navController.popBackStack()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Eliminar Orden")
+                    }
                 }
             }
         }

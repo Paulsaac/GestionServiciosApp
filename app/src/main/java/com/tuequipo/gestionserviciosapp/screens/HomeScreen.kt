@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.tuequipo.gestionserviciosapp.model.OrderStatus
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
 import com.tuequipo.gestionserviciosapp.viewmodel.HomeViewModel
 import com.tuequipo.gestionserviciosapp.viewmodel.ViewModelFactory
@@ -47,12 +46,14 @@ fun HomeScreen(navController: NavController, factory: ViewModelFactory) {
                 snackbarHostState.showSnackbar("Orden guardada con éxito")
             }
             navController.currentBackStackEntry?.savedStateHandle?.set("new_order_added", false)
+            viewModel.loadOrders()
         }
         if (orderDeleted) {
             scope.launch {
                 snackbarHostState.showSnackbar("Orden eliminada correctamente")
             }
             navController.currentBackStackEntry?.savedStateHandle?.set("order_deleted", false)
+            viewModel.loadOrders()
         }
     }
     // --- FIN CÓDIGO NUEVO PARA SNACKBAR ---
@@ -82,9 +83,10 @@ fun HomeScreen(navController: NavController, factory: ViewModelFactory) {
 fun ServiceOrderItem(order: ServiceOrder, navController: NavController) {
     // ... (El código de ServiceOrderItem se mantiene como lo definimos en el paso anterior)
     val cardColor = when (order.status) {
-        OrderStatus.PENDIENTE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        OrderStatus.EN_PROCESO -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-        OrderStatus.FINALIZADO -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        "PENDIENTE" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        "EN_PROCESO" -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        "FINALIZADO" -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.3f) // Un default
     }
 
     Card(

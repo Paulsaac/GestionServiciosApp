@@ -4,14 +4,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tuequipo.gestionserviciosapp.model.AddOrderFormState
-import com.tuequipo.gestionserviciosapp.model.OrderStatus
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
 import com.tuequipo.gestionserviciosapp.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Date
+
+import java.text.SimpleDateFormat // Importa esto
+import java.util.* // Importa esto
 
 class AddOrderViewModel(private val repository: ServiceRepository) : ViewModel() {
 
@@ -69,13 +70,16 @@ class AddOrderViewModel(private val repository: ServiceRepository) : ViewModel()
             return false // Indica que el guardado falló
         }
 
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val currentDateString = sdf.format(Date())
+
         // Si todo es válido, crea la orden y guárdala
         val newOrder = ServiceOrder(
             clientName = state.clientName,
             deviceType = state.deviceType,
             issueDescription = state.description,
-            status = OrderStatus.PENDIENTE,
-            creationDate = Date(),
+            status = "PENDIENTE", // Cambiado de OrderStatus.PENDIENTE
+            creationDate = currentDateString,
             latitude = latitude.value,
             longitude = longitude.value
         )

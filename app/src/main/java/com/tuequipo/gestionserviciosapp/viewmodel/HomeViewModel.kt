@@ -2,20 +2,37 @@ package com.tuequipo.gestionserviciosapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tuequipo.gestionserviciosapp.database.ServiceOrderDao
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
 import com.tuequipo.gestionserviciosapp.repository.ServiceRepository
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class HomeViewModel(private val repository: ServiceRepository) : ViewModel() {
-    // Obtenemos el Flow de órdenes desde el DAO y lo convertimos en un StateFlow.
-    // La UI "escuchará" a este StateFlow para recibir actualizaciones.
-    val serviceOrders: StateFlow<List<ServiceOrder>> = repository.getAllOrders() // Usa el repositorio
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = emptyList()
-        )
+
+    // 1. Hacemos la lista "privada" para poder controlarla
+    private val _serviceOrders = MutableStateFlow<List<ServiceOrder>>(emptyList())
+    val serviceOrders: StateFlow<List<ServiceOrder>> = _serviceOrders.asStateFlow()
+
+    init {
+        // 2. Cargamos la lista al iniciar el ViewModel
+        loadOrders()
+    }
+
+    // 3. Creamos una función pública para "refrescar" la lista
+    fun loadOrders() {
+        viewModelScope.launch {
+            // Usamos un try-catch por si la red falla
+            try {
+                repository.getAllOrders()
+                    .collect { orders ->
+                        _serviceOrders.value = orders
+                    }
+            } catch (e: Exception) {
+                // Manejar el error de red (ej: mostrar un log)
+                e.printStackTrace()
+            }
+        }
+    }
 }

@@ -66,6 +66,13 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.android.gms:play-services-location:21.2.0")
 
+    // Retrofit para networking
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    // Convertidor Gson para parsear JSON
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // (Opcional pero recomendado) Para ver logs de red
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
     // Room
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")

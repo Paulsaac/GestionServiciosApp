@@ -4,12 +4,6 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date
 
-// Enum para los estados del servicio. Es más seguro que usar Strings.
-enum class OrderStatus {
-    PENDIENTE,
-    EN_PROCESO,
-    FINALIZADO
-}
 
 
 // @Entity le dice a Room que cree una tabla para esta clase.
@@ -20,8 +14,8 @@ data class ServiceOrder(
     val clientName: String,
     val deviceType: String,
     val issueDescription: String,
-    val status: OrderStatus,
-    val creationDate: Date,
+    val status: String,
+    val creationDate: String,
     val technicianName: String? = null,
     // --- NUEVOS CAMPOS AÑADIDOS ---
     val latitude: Double? = null,

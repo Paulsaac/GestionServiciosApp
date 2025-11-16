@@ -13,18 +13,21 @@ import com.tuequipo.gestionserviciosapp.screens.HomeScreen
 import com.tuequipo.gestionserviciosapp.screens.LoginScreen
 import com.tuequipo.gestionserviciosapp.screens.OrderDetailScreen
 import com.tuequipo.gestionserviciosapp.viewmodel.ViewModelFactory
-import com.tuequipo.gestionserviciosapp.repository.ServiceRepository // <-- Importa el Repositorio
+import com.tuequipo.gestionserviciosapp.network.RetrofitClient // <-- Importa el cliente
+import com.tuequipo.gestionserviciosapp.repository.ServiceRepository
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    // 1. Obtenemos el DAO
-    val dao = AppDatabase.getDatabase(context).serviceOrderDao()
-    // 2. CREAMOS EL REPOSITORIO y le pasamos el DAO
-    val repository = ServiceRepository(dao)
-    // 3. Creamos la fábrica y le pasamos el REPOSITORIO
+    // 1. Obtenemos la instancia de nuestro cliente de red
+    val apiService = RetrofitClient.instance
+
+    // 2. Creamos el Repositorio y le pasamos el servicio de red
+    val repository = ServiceRepository(apiService)
+
+    // 3. Creamos la fábrica (esto no cambia)
     val viewModelFactory = ViewModelFactory(repository)
 
     NavHost(

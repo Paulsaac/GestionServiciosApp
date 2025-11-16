@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
-import com.tuequipo.gestionserviciosapp.model.OrderStatus
 import com.tuequipo.gestionserviciosapp.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,11 +21,11 @@ class OrderDetailViewModel(private val repository: ServiceRepository) : ViewMode
         }
     }
 
-    fun updateOrderStatus(newStatus: OrderStatus) {
+    fun updateOrderStatus(newStatus: String) { // Cambiado de OrderStatus
         _order.value?.let { currentOrder ->
             val updatedOrder = currentOrder.copy(status = newStatus)
             viewModelScope.launch {
-                repository.update(updatedOrder) // Usa el repositorio
+                repository.update(updatedOrder)
                 _order.value = updatedOrder
             }
         }

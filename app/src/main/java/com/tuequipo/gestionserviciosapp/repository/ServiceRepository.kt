@@ -1,32 +1,41 @@
 package com.tuequipo.gestionserviciosapp.repository
 
-import com.tuequipo.gestionserviciosapp.database.ServiceOrderDao
+// Ya no necesitamos el DAO, pero mantenemos la importación del modelo
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
+import com.tuequipo.gestionserviciosapp.network.ApiService
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
-// El repositorio necesita el DAO para poder acceder a la base de datos.
-class ServiceRepository(private val dao: ServiceOrderDao) {
+// El Repositorio ahora depende de ApiService, no de ServiceOrderDao
+class ServiceRepository(private val api: ApiService) {
 
-    // Simplemente reenviamos las peticiones al DAO.
-    // Si tuviéramos una fuente de datos en la nube, la lógica iría aquí.
+    // Ya no usamos el DAO local
+    // private val dao: ServiceOrderDao
 
-    fun getAllOrders(): Flow<List<ServiceOrder>> {
-        return dao.getAllOrders()
+    // Convertimos la lista de la API en un Flow
+    fun getAllOrders(): Flow<List<ServiceOrder>> = flow {
+        emit(api.getAllOrders())
     }
 
+    // Usamos 'suspend' porque las llamadas de red ya lo son
     suspend fun getOrderById(id: Int): ServiceOrder? {
-        return dao.getOrderById(id)
+        return try {
+            api.getOrderById(id)
+        } catch (e: Exception) {
+            null // Devuelve nulo si la API falla (ej: 404)
+        }
     }
 
     suspend fun insert(order: ServiceOrder) {
-        dao.insert(order)
+        api.createOrder(order)
     }
 
     suspend fun update(order: ServiceOrder) {
-        dao.update(order)
+        // La API necesita el ID para saber qué actualizar
+        api.updateOrder(order.id, order)
     }
 
     suspend fun delete(order: ServiceOrder) {
-        dao.delete(order)
+        api.deleteOrder(order.id)
     }
 }
