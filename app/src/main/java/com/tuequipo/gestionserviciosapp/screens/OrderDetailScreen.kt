@@ -5,8 +5,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.* // Importaciones de animación
-import androidx.compose.animation.core.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,11 +26,10 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.tuequipo.gestionserviciosapp.model.ServiceOrder
 import com.tuequipo.gestionserviciosapp.viewmodel.OrderDetailViewModel
 import com.tuequipo.gestionserviciosapp.viewmodel.ViewModelFactory
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,36 +40,35 @@ fun OrderDetailScreen(
 ) {
     val viewModel: OrderDetailViewModel = viewModel(factory = factory)
     val order by viewModel.order.collectAsState()
+    val weatherInfo by viewModel.weatherInfo.collectAsState()
     val context = LocalContext.current
 
-    var hasImage by remember { mutableStateOf(false) }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
-
-    fun getTmpFileUri(): Uri {
-        val tmpFile = File.createTempFile("tmp_image_file", ".png", context.cacheDir).apply {
-            createNewFile()
-            deleteOnExit()
-        }
-        return FileProvider.getUriForFile(context, "${context.packageName}.provider", tmpFile)
-    }
+    // Lógica de Imagen (corregida)
+    val imageUri by viewModel.imageUri.collectAsState()
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
-        onResult = { success -> hasImage = success }
+        onResult = { success ->
+            if (success) {
+                tempCameraUri?.let { viewModel.saveImageUriToOrder(it) }
+            }
+        }
     )
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             if (isGranted) {
-                imageUri = getTmpFileUri()
-                cameraLauncher.launch(imageUri)
+                tempCameraUri = viewModel.getUriForNewImage(context)
+                cameraLauncher.launch(tempCameraUri)
             }
         }
     )
 
-    LaunchedEffect(Unit) {
-        orderId?.let { viewModel.loadOrder(it) }
+    // Carga de datos
+    LaunchedEffect(key1 = Unit) {
+        orderId?.let { viewModel.loadOrder(id = it, context = context) }
     }
 
     Scaffold(
@@ -100,56 +98,44 @@ fun OrderDetailScreen(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
             ) {
+                // --- SECCIÓN DE DETALLES ---
                 Text("Cliente: ${order!!.clientName}", style = MaterialTheme.typography.titleLarge)
                 Text("Equipo: ${order!!.deviceType}", style = MaterialTheme.typography.titleMedium)
-
                 Text(
                     text = "Estado: ${order!!.status}",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.animateContentSize(
-                        animationSpec = spring(dampingRatio = 0.5f) // 1000ms = 1 segundo
-                    )
+                    modifier = Modifier.animateContentSize(animationSpec = tween(durationMillis = 500))
                 )
-
-                Text(
-                    "Descripción: ${order!!.issueDescription}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                val formattedDate = SimpleDateFormat(
-                    "dd/MM/yyyy HH:mm",
-                    Locale.getDefault()
-                ).format(order!!.creationDate)
-                Text(
-                    "Fecha de Creación: $formattedDate",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text("Descripción: ${order!!.issueDescription}", style = MaterialTheme.typography.bodyLarge)
+                Text("Fecha de Creación: ${order!!.creationDate}", style = MaterialTheme.typography.bodySmall)
 
                 order!!.technicianName?.let {
                     Text("Técnico Asignado: $it", style = MaterialTheme.typography.bodyMedium)
                 }
 
+                // --- SECCIÓN DE UBICACIÓN Y CLIMA (REINCORPORADA) ---
                 if (order!!.latitude != null && order!!.longitude != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Ubicación Registrada:", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        "Lat: ${order!!.latitude}, Lon: ${order!!.longitude}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text("Lat: ${order!!.latitude}, Lon: ${order!!.longitude}", style = MaterialTheme.typography.bodyMedium)
+                    weatherInfo?.let {
+                        Text(
+                            text = "Clima: $it",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
+                // --- FIN DE LA SECCIÓN ---
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- BLOQUE DE IMAGEN CORREGIDO ---
-                // Reemplazamos el 'if' por 'AnimatedVisibility'
+                // --- SECCIÓN DE CÁMARA (CORREGIDA) ---
                 AnimatedVisibility(
-                    visible = hasImage && imageUri != null,
+                    visible = imageUri != null,
                     enter = slideInVertically { it } + fadeIn(),
                     exit = slideOutVertically { it } + fadeOut()
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                         Image(
                             painter = rememberAsyncImagePainter(imageUri),
                             contentDescription = "Foto del equipo",
@@ -158,18 +144,13 @@ fun OrderDetailScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
-                // --- FIN DEL BLOQUE DE IMAGEN ---
 
                 Button(
                     onClick = {
                         val permission = Manifest.permission.CAMERA
-                        if (ContextCompat.checkSelfPermission(
-                                context,
-                                permission
-                            ) == PackageManager.PERMISSION_GRANTED
-                        ) {
-                            imageUri = getTmpFileUri()
-                            cameraLauncher.launch(imageUri)
+                        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                            tempCameraUri = viewModel.getUriForNewImage(context)
+                            cameraLauncher.launch(tempCameraUri)
                         } else {
                             permissionLauncher.launch(permission)
                         }
@@ -180,45 +161,36 @@ fun OrderDetailScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Tomar Foto del Equipo")
                 }
+                // --- FIN SECCIÓN CÁMARA ---
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // --- SECCIÓN CAMBIAR ESTADO ---
                 Text("Cambiar Estado:", style = MaterialTheme.typography.titleSmall)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
-                        onClick = { viewModel.updateOrderStatus("PENDIENTE") },
-                        enabled = order!!.status != "PENDIENTE"
-                    ) { Text("Pendiente") }
-                    Button(
-                        onClick = { viewModel.updateOrderStatus("EN_PROCESO") },
-                        enabled = order!!.status != "EN_PROCESO"
-                    ) { Text("En Proceso") }
-                    Button(
-                        onClick = { viewModel.updateOrderStatus("FINALIZADO") },
-                        enabled = order!!.status != "FINALIZADO"
-                    ) { Text("Finalizado") }
+                    Button(onClick = { viewModel.updateOrderStatus("PENDIENTE") }, enabled = order!!.status != "PENDIENTE") { Text("Pendiente") }
+                    Button(onClick = { viewModel.updateOrderStatus("EN_PROCESO") }, enabled = order!!.status != "EN_PROCESO") { Text("En Proceso") }
+                    Button(onClick = { viewModel.updateOrderStatus("FINALIZADO") }, enabled = order!!.status != "FINALIZADO") { Text("Finalizado") }
+                }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                    Button(
-                        onClick = {
-                            viewModel.deleteOrder()
-                            navController.previousBackStackEntry?.savedStateHandle?.set(
-                                "order_deleted",
-                                true
-                            )
-                            navController.popBackStack()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Eliminar Orden")
-                    }
+                // --- SECCIÓN ELIMINAR ORDEN ---
+                Button(
+                    onClick = {
+                        viewModel.deleteOrder()
+                        navController.previousBackStackEntry?.savedStateHandle?.set("order_deleted", true)
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Eliminar Orden")
                 }
             }
         }

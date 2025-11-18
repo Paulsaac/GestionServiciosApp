@@ -1,16 +1,20 @@
 package com.tuequipo.gestionserviciosapp.repository
 
-// Ya no necesitamos el DAO, pero mantenemos la importación del modelo
+
 import com.tuequipo.gestionserviciosapp.model.ServiceOrder
 import com.tuequipo.gestionserviciosapp.network.ApiService
+import com.tuequipo.gestionserviciosapp.network.WeatherApiService // <-- Importa el servicio de clima
+import com.tuequipo.gestionserviciosapp.model.WeatherResponse // <-- Importa el modelo de clima
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 // El Repositorio ahora depende de ApiService, no de ServiceOrderDao
-class ServiceRepository(private val api: ApiService) {
-
+class ServiceRepository(
+    private val api: ApiService, // API de nuestro backend
+    private val weatherApi: WeatherApiService // <-- AÑADIDO: API Externa)
+){
     // Ya no usamos el DAO local
-    // private val dao: ServiceOrderDao
+
 
     // Convertimos la lista de la API en un Flow
     fun getAllOrders(): Flow<List<ServiceOrder>> = flow {
@@ -37,5 +41,10 @@ class ServiceRepository(private val api: ApiService) {
 
     suspend fun delete(order: ServiceOrder) {
         api.deleteOrder(order.id)
+    }
+
+    // Esta función llama a la API del clima usando las coordenadas
+    suspend fun getWeather(latitude: Double, longitude: Double): WeatherResponse {
+        return weatherApi.getCurrentWeather(latitude, longitude)
     }
 }

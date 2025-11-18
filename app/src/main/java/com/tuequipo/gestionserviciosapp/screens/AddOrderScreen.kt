@@ -33,29 +33,38 @@ fun AddOrderScreen(navController: NavController, factory: ViewModelFactory) {
     var locationText by remember { mutableStateOf("Ubicación no registrada") }
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
+    // --- 1. CREAMOS UNA FUNCIÓN SEPARADA PARA OBTENER LA UBICACIÓN ---
+    fun fetchLocation() {
+        // Hacemos la comprobación de seguridad (requerida por el IDE)
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    viewModel.setLocation(location.latitude, location.longitude)
+                    locationText = "Ubicación registrada: Lat ${location.latitude}, Lon ${location.longitude}"
+                } else {
+                    locationText = "No se pudo obtener la ubicación (activa el GPS del emulador)"
+                }
+            }
+        }
+    }
+
+    // --- 2. EL LANZADOR DE PERMISOS AHORA SOLO LLAMA A fetchLocation() ---
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions ->
-            // --- CÓDIGO CORREGIDO ---
             if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-                // Comprueba los permisos DE NUEVO (es requerido por el linter)
-                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                    ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                        if (location != null) {
-                            viewModel.setLocation(location.latitude, location.longitude)
-                            locationText = "Ubicación registrada: Lat ${location.latitude}, Lon ${location.longitude}"
-                        }
-                    }
-                }
+                // Permiso concedido, ahora sí obtenemos la ubicación
+                fetchLocation()
             } else {
                 locationText = "Permiso de ubicación denegado"
             }
         }
     )
-    // --- FIN CÓDIGO CORREGIDO ---
+
+
 
     Scaffold(
         topBar = {
@@ -134,10 +143,20 @@ fun AddOrderScreen(navController: NavController, factory: ViewModelFactory) {
             Spacer(modifier = Modifier.height(10.dp))
             Button(
                 onClick = {
-                    locationPermissionLauncher.launch(arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ))
+                    // Comprueba si el permiso YA está concedido
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                        ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                        // Si ya lo tiene, solo obtén la ubicación
+                        fetchLocation()
+
+                    } else {
+                        // Si no lo tiene, PIDE el permiso
+                        locationPermissionLauncher.launch(arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ))
+                    }
                 }
             ) {
                 Icon(Icons.Default.MyLocation, contentDescription = "Ubicación")
@@ -150,8 +169,10 @@ fun AddOrderScreen(navController: NavController, factory: ViewModelFactory) {
 
             Button(
                 onClick = {
-                    val isValid = viewModel.validateAndSaveOrder()
-                    if (isValid) {
+                    // 1. Llama a la nueva función
+                    viewModel.validateAndSaveOrder {
+                        // 2. Esta lógica ahora SÓLO se ejecuta
+                        //    después de que el ViewModel confirma el guardado.
                         navController.previousBackStackEntry?.savedStateHandle?.set("new_order_added", true)
                         navController.popBackStack()
                     }

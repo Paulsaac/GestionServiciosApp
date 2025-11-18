@@ -79,4 +79,10 @@ dependencies {
     ksp("androidx.room:room-compiler:$room_version") // KSP en lugar de kapt
     // Soporte opcional para Coroutines de Kotlin
     implementation("androidx.room:room-ktx:$room_version")
+
+    // Dependencias de Prueba
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.1") // Para probar Coroutines
+    testImplementation("io.mockk:mockk:1.13.5") // Para "mockear" o simular clases
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // Para probar LiveData/StateFlow
 }

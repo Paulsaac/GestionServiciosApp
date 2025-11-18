@@ -10,55 +10,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-import java.text.SimpleDateFormat // Importa esto
-import java.util.* // Importa esto
+import java.text.SimpleDateFormat
+import java.util.*
 
 class AddOrderViewModel(private val repository: ServiceRepository) : ViewModel() {
 
-    // Usamos un StateFlow para el estado del formulario
     private val _formState = MutableStateFlow(AddOrderFormState())
     val formState = _formState.asStateFlow()
 
-    // Mantenemos la lógica de ubicación separada
     val latitude = mutableStateOf<Double?>(null)
     val longitude = mutableStateOf<Double?>(null)
 
+    // ... (las funciones onClientNameChange, onDeviceTypeChange, etc. se mantienen igual)
+    fun onClientNameChange(name: String) { _formState.update { it.copy(clientName = name, isClientNameError = false) } }
+    fun onDeviceTypeChange(device: String) { _formState.update { it.copy(deviceType = device, isDeviceTypeError = false) } }
+    fun onDescriptionChange(description: String) { _formState.update { it.copy(description = description, isDescriptionError = false) } }
+    fun setLocation(lat: Double, lon: Double) { latitude.value = lat; longitude.value = lon }
 
-
-    // Funciones para actualizar el estado cuando el usuario escribe
-    fun onClientNameChange(name: String) {
-        _formState.update { currentState ->
-            currentState.copy(clientName = name, isClientNameError = false)
-        }
-    }
-
-    fun onDeviceTypeChange(device: String) {
-        _formState.update { currentState ->
-            currentState.copy(deviceType = device, isDeviceTypeError = false)
-        }
-    }
-
-    fun onDescriptionChange(description: String) {
-        _formState.update { currentState ->
-            currentState.copy(description = description, isDescriptionError = false)
-        }
-    }
-
-
-    fun setLocation(lat: Double, lon: Double) {
-        latitude.value = lat
-        longitude.value = lon
-    }
-
-    // Esta función reemplaza a la antigua 'saveOrder'
-    fun validateAndSaveOrder(): Boolean {
+    // --- FUNCIÓN DE GUARDADO MODIFICADA ---
+    // 1. Ya no devuelve Boolean. Acepta una función 'onSaveSuccess' como parámetro.
+    fun validateAndSaveOrder(onSaveSuccess: () -> Unit) {
         val state = _formState.value
         val isClientNameValid = state.clientName.isNotBlank()
         val isDeviceTypeValid = state.deviceType.isNotBlank()
         val isDescriptionValid = state.description.isNotBlank()
 
-        // Si hay errores, actualiza el estado para mostrar los mensajes
         if (!isClientNameValid || !isDeviceTypeValid || !isDescriptionValid) {
             _formState.update {
                 it.copy(
@@ -67,26 +43,29 @@ class AddOrderViewModel(private val repository: ServiceRepository) : ViewModel()
                     isDescriptionError = !isDescriptionValid
                 )
             }
-            return false // Indica que el guardado falló
+            return // 2. Si la validación falla, simplemente retorna.
         }
 
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         val currentDateString = sdf.format(Date())
 
-        // Si todo es válido, crea la orden y guárdala
         val newOrder = ServiceOrder(
             clientName = state.clientName,
             deviceType = state.deviceType,
             issueDescription = state.description,
-            status = "PENDIENTE", // Cambiado de OrderStatus.PENDIENTE
+            status = "PENDIENTE",
             creationDate = currentDateString,
             latitude = latitude.value,
             longitude = longitude.value
         )
 
         viewModelScope.launch {
-            repository.insert(newOrder)
+            try {
+                repository.insert(newOrder) // 3. Espera a que el guardado termine...
+                onSaveSuccess() // 4. ...y SÓLO ENTONCES llama a la función de éxito.
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-        return true // Indica que el guardado fue exitoso
     }
 }

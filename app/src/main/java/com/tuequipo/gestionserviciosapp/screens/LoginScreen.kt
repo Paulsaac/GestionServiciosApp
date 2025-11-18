@@ -1,77 +1,82 @@
 package com.tuequipo.gestionserviciosapp.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.tuequipo.gestionserviciosapp.ui.theme.GestionServiciosAppTheme
+import com.tuequipo.gestionserviciosapp.viewmodel.LoginViewModel
 
-// @Composable indica que esta es una función de UI
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = viewModel()) {
 
-    // Usamos estados para guardar lo que el usuario escribe.
-    // 'remember' hace que el valor no se pierda si la pantalla se redibuja.
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // Column apila los elementos verticalmente
+    // Observamos el estado de error del ViewModel
+    val loginError by loginViewModel.loginError.collectAsState()
+
     Column(
         modifier = Modifier
-            .fillMaxSize() // Ocupa todo el tamaño de la pantalla
-            .padding(16.dp), // Añade un margen de 16dp en todos los lados
-        verticalArrangement = Arrangement.Center, // Centra los elementos verticalmente
-        horizontalAlignment = Alignment.CenterHorizontally // Centra los elementos horizontalmente
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(text = "Bienvenido", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp)) // Un espacio vertical
-
-        // Campo de texto para el email
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it }, // Actualiza el estado cuando el usuario escribe
-            label = { Text("Correo Electrónico") },
-            modifier = Modifier.fillMaxWidth() // Ocupa todo el ancho disponible
+            onValueChange = { email = it },
+            label = { Text("Correo Electrónico (ej: admin@app.cl)") },
+            modifier = Modifier.fillMaxWidth(),
+            isError = loginError != null // Muestra error si existe
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Campo de texto para la contraseña
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Contraseña") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(), // Oculta la contraseña
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            isError = loginError != null
         )
+
+        // Muestra el mensaje de error si existe
+        loginError?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botón de inicio de sesión
         Button(
             onClick = {
-                // Le decimos al navController que navegue a la ruta "home"
-                navController.navigate("home")
+                // 1. Llama a la función de login del ViewModel
+                val success = loginViewModel.login(email, password)
+
+                // 2. Solo navega si el login fue exitoso
+                if (success) {
+                    navController.navigate("home")
+                }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Iniciar Sesión")
         }
-    }
-}
-
-// @Preview nos permite ver el diseño sin tener que ejecutar la app
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    GestionServiciosAppTheme {
-        // Creamos un NavController de prueba para la vista previa
-        val navController = rememberNavController()
-        LoginScreen(navController = navController)
     }
 }

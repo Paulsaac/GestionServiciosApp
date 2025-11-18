@@ -41,7 +41,8 @@ class ServiceOrderController(
                     deviceType = orderDetails.deviceType,
                     issueDescription = orderDetails.issueDescription,
                     status = orderDetails.status,
-                    technicianName = orderDetails.technicianName
+                    technicianName = orderDetails.technicianName,
+                    imagePath = orderDetails.imagePath
                 )
                 ResponseEntity.ok(repository.save(updatedOrder))
             }
