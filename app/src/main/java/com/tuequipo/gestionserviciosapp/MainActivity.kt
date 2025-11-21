@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.tuequipo.gestionserviciosapp.screens.LoginScreen
 import com.tuequipo.gestionserviciosapp.ui.theme.GestionServiciosAppTheme
 
 class MainActivity : ComponentActivity() {
